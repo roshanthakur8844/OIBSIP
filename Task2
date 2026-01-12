@@ -1,0 +1,122 @@
+//Create Search class
+package com.example.hoenscanner.api;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class Search {
+
+    @JsonProperty
+    private String city;
+
+    // Required by Jackson
+    public Search() {}
+
+    public Search(String city) {
+        this.city = city;
+    }
+
+    public String getCity() {
+        return city;
+    }
+}
+
+//Create SearchResult class
+package com.example.hoenscanner.api;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class SearchResult {
+
+    @JsonProperty
+    private String city;
+
+    @JsonProperty
+    private String kind;
+
+    @JsonProperty
+    private String title;
+
+    // Required by Jackson
+    public SearchResult() {}
+
+    public SearchResult(String city, String kind, String title) {
+        this.city = city;
+        this.kind = kind;
+        this.title = title;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getKind() {
+        return kind;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+}
+// Load JSON files in HoenScannerApplication
+
+@Override
+public void run(HoenScannerConfiguration configuration, Environment environment)
+        throws Exception {
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    List<SearchResult> searchResults = new ArrayList<>();
+
+    searchResults.addAll(
+        mapper.readValue(
+            getClass().getResourceAsStream("/rental_cars.json"),
+            new TypeReference<List<SearchResult>>() {}
+        )
+    );
+
+    searchResults.addAll(
+        mapper.readValue(
+            getClass().getResourceAsStream("/hotels.json"),
+            new TypeReference<List<SearchResult>>() {}
+        )
+    );
+
+    // Register resource
+    environment.jersey().register(
+        new SearchResource(searchResults)
+    );
+}
+// Create SearchResource
+package com.example.hoenscanner.resources;
+
+import com.example.hoenscanner.api.Search;
+import com.example.hoenscanner.api.SearchResult;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Path("/search")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public class SearchResource {
+
+    private final List<SearchResult> searchResults;
+
+    public SearchResource(List<SearchResult> searchResults) {
+        this.searchResults = searchResults;
+    }
+
+    @POST
+    public List<SearchResult> search(Search search) {
+        return searchResults.stream()
+                .filter(result ->
+                        result.getCity().equalsIgnoreCase(search.getCity()))
+                .collect(Collectors.toList());
+    }
+}
+
+
+
+
